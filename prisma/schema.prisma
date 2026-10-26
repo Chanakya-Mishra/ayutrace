@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id          String       @id @default(cuid())
+  name        String       @default("AyuTrace Health Network")
+  code        String       @unique @default("AYU-HEALTH")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  facilities  Facility[]
+}
+
+model Facility {
+  id          String            @id @default(cuid())
+  orgId       String
+  org         Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name        String
+  type        String            @default("hospital") // hospital, clinic, pharmacy, dispensary, stockroom
+  city        String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  locations   StorageLocation[]
+
+  @@index([orgId])
+  @@index([type])
+}
+
+model StorageLocation {
+  id             String          @id @default(cuid())
+  facilityId     String
+  facility       Facility        @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  name           String          // e.g., "Central Pharmacy Shelf A", "Cold Chain Refrigerator 1", "Emergency Ward Cart"
+  description    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  balances       StockBalance[]
+  outgoingMoves  StockMovement[] @relation("SourceLocation")
+  incomingMoves  StockMovement[] @relation("DestLocation")
+
+  @@index([facilityId])
+}
+
+model Medicine {
+  id                  String          @id @default(cuid())
+  name                String          // Commercial / Trade Name (e.g., "Paracip 500")
+  genericName         String?         // Active Composition / Generic (e.g., "Paracetamol IP")
+  brand               String?         // Brand / Trade Marker
+  manufacturer        String?         // Pharmaceutical Manufacturer (e.g., "Cipla Ltd")
+  strength            String?         // e.g., "500 mg", "250 mg / 5 ml"
+  dosageForm          String          @default("Tablet") // Tablet, Capsule, Syrup, Injection, Ointment, Drops, IV Fluid
+  category            String          @default("General") // Analgesic, Antibiotic, Cardiovascular, Respiratory, Emergency
+  packSize            String?         // e.g., "Strip of 10 tablets", "Vial of 10 ml"
+  storageInstructions String?         // e.g., "Store below 25°C. Protect from moisture & light."
+  scheduleType        String?         @default("Schedule H") // Schedule H, Schedule H1, OTC, Schedule X
+  warnings            String?         // Mandatory statutory warnings
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  batches             MedicineBatch[]
+
+  @@index([name])
+  @@index([genericName])
+  @@index([category])
+  @@index([dosageForm])
+}
+
+model MedicineBatch {
+  id                   String          @id @default(cuid())
+  medicineId           String
+  medicine             Medicine        @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  batchNumber          String          // Lot / Batch Number
+  manufacturingDateText String?        // Raw printed text on packaging
+  expiryDateText       String?         // Raw printed text on packaging (e.g. "08/2026")
+  normalizedExpiryDate DateTime?       // Deterministic computed cutoff (e.g. 2026-08-31 for 08/2026)
+  datePrecision        String          @default("month_year") // day_month_year, month_year, unknown
+  status               String          @default("active") // active, near_expiry, critical, expired, quarantined, depleted
+  verifiedByStaff      Boolean         @default(true)
+  verifiedAt           DateTime?
+  verifiedBy           String?         @default("Staff Pharmacist")
+  scanConfidence       String?         // high, medium, low, manual
+  notes                String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  balances             StockBalance[]
+  movements            StockMovement[]
+
+  @@index([medicineId])
+  @@index([batchNumber])
+  @@index([normalizedExpiryDate])
+  @@index([status])
+}
+
+model StockBalance {
+  id          String          @id @default(cuid())
+  batchId     String
+  batch       MedicineBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  locationId  String
+  location    StorageLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  quantity    Int             @default(0) // Available quantity in units/packs, strictly >= 0
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([batchId, locationId])
+  @@index([batchId])
+  @@index([locationId])
+}
+
+model StockMovement {
+  id                    String           @id @default(cuid())
+  batchId               String
+  batch                 MedicineBatch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  sourceLocationId      String?
+  sourceLocation        StorageLocation? @relation("SourceLocation", fields: [sourceLocationId], references: [id], onDelete: SetNull)
+  destinationLocationId String?
+  destinationLocation   StorageLocation? @relation("DestLocation", fields: [destinationLocationId], references: [id], onDelete: SetNull)
+  quantity              Int              // Number of units moved
+  movementType          String           // intake, transfer, dispense, adjustment, quarantine, disposal
+  reason                String           // Clinical issue, stock replenishment, inter-ward transfer, damage, routine audit
+  notes                 String?
+  performedBy           String           @default("Staff Pharmacist")
+  createdAt             DateTime         @default(now())
+
+  @@index([batchId])
+  @@index([sourceLocationId])
+  @@index([destinationLocationId])
+}
+
+model AppSettings {
+  id                          String   @id @default("default")
+  orgName                     String   @default("AyuTrace Health Network")
+  defaultFacilityId           String?
+  nearExpiryThresholdDays     Int      @default(90) // Healthcare warning horizon (default 90 days)
+  criticalExpiryThresholdDays Int      @default(30) // Critical horizon (default 30 days)
+  urgentExpiryThresholdDays   Int      @default(7)  // Urgent immediate quarantine (default 7 days)
+  dateFormat                  String   @default("DD/MM/YYYY")
+  updatedAt                   DateTime @updatedAt
+}

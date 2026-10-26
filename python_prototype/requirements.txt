@@ -1,0 +1,6 @@
+streamlit
+pillow
+pydantic
+python-dotenv
+google-genai
+pytest
