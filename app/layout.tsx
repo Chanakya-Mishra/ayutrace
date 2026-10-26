@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   title: "AyuTrace — Every Dose Deserves Care.",
   description:
     "Intelligent medicine tracking, lot traceability & statutory expiry compliance for healthcare facilities, powered by Google Gemma 4.",
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: "/apple-icon.png",
+    shortcut: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

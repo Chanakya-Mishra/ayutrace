@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -93,27 +94,16 @@ export function Sidebar({ alertCount = 0 }: SidebarProps) {
           href="/dashboard"
           className="flex items-center gap-2.5 overflow-hidden group"
         >
-          {/* Custom SVG logo: Medicine capsule with cross & trace path */}
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-700 text-white shadow-xs group-hover:bg-teal-800 transition-colors">
-            <svg
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              {/* Capsule body */}
-              <rect x="3" y="5" width="18" height="14" rx="7" />
-              {/* Center dividing line */}
-              <line x1="12" y1="5" x2="12" y2="19" />
-              {/* Healthcare cross on left half */}
-              <line x1="7.5" y1="9.5" x2="7.5" y2="14.5" />
-              <line x1="5" y1="12" x2="10" y2="12" />
-              {/* Pulse / trace dot on right half */}
-              <circle cx="16.5" cy="12" r="1.5" fill="currentColor" />
-            </svg>
+          {/* AyuTrace Logo */}
+          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl shadow-xs transition-transform group-hover:scale-105">
+            <Image
+              src="/logo.png"
+              alt="AyuTrace Logo"
+              width={36}
+              height={36}
+              className="h-full w-full object-cover"
+              priority
+            />
           </div>
 
           {!isCollapsed && (

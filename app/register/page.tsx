@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -133,22 +134,15 @@ export default function RegisterPage() {
           href="/"
           className="inline-flex items-center gap-2.5 transition-transform hover:scale-105"
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white shadow-md shadow-teal-700/20">
-            <svg
-              className="h-6 w-6"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="5" width="18" height="14" rx="7" />
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="7.5" y1="9.5" x2="7.5" y2="14.5" />
-              <line x1="5" y1="12" x2="10" y2="12" />
-              <circle cx="16.5" cy="12" r="1.5" fill="currentColor" />
-            </svg>
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl shadow-md shadow-teal-800/15">
+            <Image
+              src="/logo.png"
+              alt="AyuTrace Logo"
+              width={48}
+              height={48}
+              className="h-full w-full object-cover"
+              priority
+            />
           </div>
           <div className="text-left">
             <div className="text-xl font-bold tracking-tight text-slate-900 leading-tight">
