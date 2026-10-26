@@ -21,6 +21,8 @@ prisma/*.db
 prisma/*.db-journal
 *.db
 *.db-journal
+!prisma/template.db
+!public/template.db
 
 # Python caches
 __pycache__/

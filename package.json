@@ -6,12 +6,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts"
+  },
+  "engines": {
+    "node": ">=18.18.0"
   },
   "dependencies": {
     "@google/genai": "^2.31.0",
