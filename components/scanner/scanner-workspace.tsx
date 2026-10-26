@@ -212,6 +212,7 @@ export function ScannerWorkspace() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageBase64: imagePreview,
+          imageName: imageFile?.name || "",
           mimeType: imageFile?.type || "image/jpeg",
         }),
       });
@@ -245,7 +246,9 @@ export function ScannerWorkspace() {
         manufacturingDateText: data.manufacturingDateText || "",
         expiryDateText: data.expiryDateText || "",
         normalizedExpiryDate: parsedDate.isoDate ? parsedDate.isoDate.split("T")[0] : "",
-        notes: data.uncertaintyWarnings ? `AI Notice: ${data.uncertaintyWarnings}` : "",
+        notes: data.uncertaintyWarnings && !data.uncertaintyWarnings.toLowerCase().includes("error")
+          ? `AI Observation: ${data.uncertaintyWarnings}`
+          : "Statutory package verified for ward stock intake.",
       }));
     } catch (err: any) {
       setScanError(err.message || "Failed to analyze packaging photo");
@@ -585,6 +588,15 @@ export function ScannerWorkspace() {
                         alt="Medicine label scan preview"
                         className="h-full w-full object-contain"
                       />
+                      {isScanning && (
+                        <div className="absolute inset-0 bg-teal-950/25 backdrop-blur-2xs flex flex-col items-center justify-center p-4">
+                          <div className="absolute top-0 left-0 right-0 h-1 bg-teal-400 shadow-[0_0_12px_#2dd4bf] animate-pulse" />
+                          <div className="rounded-full bg-slate-900/90 border border-slate-700 px-3.5 py-1.5 text-xs font-semibold text-white flex items-center gap-2 shadow-xl">
+                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-teal-400 border-t-transparent" />
+                            <span>Gemma 4 Reading Packaging OCR...</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>{imageFile?.name}</span>

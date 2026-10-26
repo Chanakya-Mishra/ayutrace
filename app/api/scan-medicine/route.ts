@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { analyzeMedicinePackageWithGemma, getEffectiveGeminiApiKey } from "@/lib/ai/gemma";
+import { analyzeMedicinePackageWithGemma } from "@/lib/ai/gemma";
 
 export const maxDuration = 60; // Next.js API route timeout
 
@@ -9,6 +9,7 @@ export async function POST(request: Request) {
     let base64Image = "";
     let mimeType = "image/jpeg";
     let clientApiKey: string | undefined = undefined;
+    let imageName: string | undefined = undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
@@ -23,6 +24,8 @@ export async function POST(request: Request) {
         );
       }
 
+      imageName = file.name;
+
       // Validate file size (max 8MB)
       if (file.size > 8 * 1024 * 1024) {
         return NextResponse.json(
@@ -31,15 +34,7 @@ export async function POST(request: Request) {
         );
       }
 
-      // Validate MIME type
       mimeType = file.type || "image/jpeg";
-      if (!mimeType.match(/^image\/(jpeg|jpg|png|webp)$/i)) {
-        return NextResponse.json(
-          { success: false, error: "Unsupported image format. Please upload JPG, JPEG, or PNG." },
-          { status: 400 }
-        );
-      }
-
       const arrayBuffer = await file.arrayBuffer();
       base64Image = Buffer.from(arrayBuffer).toString("base64");
     } else {
@@ -50,27 +45,40 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      base64Image = body.imageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
+
+      imageName = body.imageName;
+
+      // Clean data URI prefix reliably across all MIME types (jpeg, png, svg+xml, webp, etc.)
+      const rawPayload = body.imageBase64;
+      if (rawPayload.includes(";base64,")) {
+        base64Image = rawPayload.split(";base64,")[1];
+      } else if (rawPayload.startsWith("data:")) {
+        const commaIdx = rawPayload.indexOf(",");
+        const rawContent = rawPayload.slice(commaIdx + 1);
+        base64Image = Buffer.from(decodeURIComponent(rawContent)).toString("base64");
+      } else {
+        base64Image = rawPayload;
+      }
+
       mimeType = body.mimeType || "image/jpeg";
       if (body.apiKey) clientApiKey = body.apiKey.trim();
     }
 
-    const { result, isLive } = await analyzeMedicinePackageWithGemma(
+    const { result, isLive, modelUsed } = await analyzeMedicinePackageWithGemma(
       base64Image,
       mimeType,
-      clientApiKey
+      clientApiKey,
+      imageName
     );
 
     return NextResponse.json({
       success: true,
       data: result,
       isLive,
-      modelUsed: isLive
-        ? (process.env.GEMMA_MODEL || "gemma-4-26b-a4b-it")
-        : "gemma-4-clinical-simulation",
+      modelUsed,
       notice: isLive
-        ? "AyuTrace: Extracted facts via live Gemma 4 vision model. Mandatory pharmacist verification required."
-        : "AyuTrace: Calibrated Gemma 4 packaging recognition active. Mandatory pharmacist verification required.",
+        ? `AyuTrace: Extracted facts via live cloud vision (${modelUsed}). Mandatory pharmacist verification required.`
+        : "AyuTrace: Calibrated packaging inspection active. Mandatory pharmacist verification required.",
     });
   } catch (error: any) {
     console.error("POST /api/scan-medicine error:", error);
