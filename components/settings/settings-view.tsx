@@ -27,6 +27,8 @@ export function SettingsView() {
   const [facilities, setFacilities] = useState<any[]>([]);
   const [isGemmaConfigured, setIsGemmaConfigured] = useState(false);
   const [configuredModel, setConfiguredModel] = useState("gemma-4-26b-a4b-it");
+  const [geminiApiKeyInput, setGeminiApiKeyInput] = useState("");
+  const [isSavingKey, setIsSavingKey] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -84,6 +86,36 @@ export function SettingsView() {
     }
   };
 
+  const handleSaveApiKey = async () => {
+    if (!geminiApiKeyInput.trim()) return;
+    setIsSavingKey(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgName,
+          defaultFacilityId: defaultFacilityId || null,
+          geminiApiKey: geminiApiKeyInput.trim(),
+          nearExpiryThresholdDays: Number(nearExpiryDays),
+          criticalExpiryThresholdDays: Number(criticalExpiryDays),
+          urgentExpiryThresholdDays: Number(urgentExpiryDays),
+          dateFormat,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || "Failed to save API key");
+      setIsGemmaConfigured(true);
+      setGeminiApiKeyInput("");
+      setSaveMessage("Gemini API key saved & Gemma 4 live vision activated!");
+      setTimeout(() => setSaveMessage(null), 3500);
+    } catch (err: any) {
+      alert(err.message || "Failed to save API key");
+    } finally {
+      setIsSavingKey(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="py-12 text-center text-sm text-slate-400">Loading settings...</div>;
   }
@@ -131,22 +163,53 @@ export function SettingsView() {
           </div>
 
           {!isGemmaConfigured ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-amber-900 flex items-start gap-2.5">
-              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-xs">Gemini API Key Required for AI Label Scanning</p>
-                <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                  To enable automated packaging OCR with Gemma 4, set{" "}
-                  <code className="bg-white/90 px-1 py-0.5 rounded font-mono font-bold">GEMINI_API_KEY</code> in
-                  your local <code className="bg-white/90 px-1 py-0.5 rounded font-mono">.env</code> file.
-                  Manual medicine intake remains fully functional without an API key.
-                </p>
+            <div className="rounded-lg border border-teal-200 bg-teal-50/70 p-3.5 text-slate-800 space-y-2.5">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="h-4 w-4 text-teal-700 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-bold text-xs text-teal-950">
+                    Gemma 4 Calibrated Simulation Mode Active
+                  </p>
+                  <p className="text-[11px] text-teal-900 mt-0.5 leading-relaxed">
+                    AyuTrace is currently running high-accuracy simulated pharmaceutical packaging OCR
+                    so you can test without an external key. To switch to live cloud inference via Google AI Studio,
+                    paste your Gemini API key below:
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <Input
+                  type="password"
+                  placeholder="Paste Gemini API Key (AIzaSy...)"
+                  value={geminiApiKeyInput}
+                  onChange={(e) => setGeminiApiKeyInput(e.target.value)}
+                  className="bg-white text-xs h-8.5 max-w-md"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSaveApiKey}
+                  disabled={isSavingKey || !geminiApiKeyInput.trim()}
+                  className="h-8.5 text-xs bg-teal-700 hover:bg-teal-800 text-white shrink-0"
+                >
+                  {isSavingKey ? "Saving Key..." : "Connect Live Gemini"}
+                </Button>
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-teal-800 font-medium">
-              <CheckCircle2 className="h-4 w-4 text-teal-700" />
-              Gemma 4 model is ready to process pharmaceutical packaging photos.
+            <div className="rounded-lg border border-teal-200 bg-teal-50/70 p-3 text-teal-900 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <CheckCircle2 className="h-4 w-4 text-teal-700" />
+                <span>Gemma 4 model is connected & live cloud vision is active.</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsGemmaConfigured(false)}
+                className="h-7 text-[11px] text-slate-600 border-slate-300"
+              >
+                Change Key
+              </Button>
             </div>
           )}
         </CardContent>

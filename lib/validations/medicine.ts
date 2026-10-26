@@ -101,6 +101,7 @@ export const StorageLocationCreateSchema = z.object({
 export const AppSettingsSchema = z.object({
   orgName: z.string().min(1, "Organization name is required"),
   defaultFacilityId: z.string().optional().nullable(),
+  geminiApiKey: z.string().optional().nullable(),
   nearExpiryThresholdDays: z.number().int().min(1).max(365),
   criticalExpiryThresholdDays: z.number().int().min(1).max(180),
   urgentExpiryThresholdDays: z.number().int().min(1).max(90),

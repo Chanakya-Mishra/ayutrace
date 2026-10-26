@@ -16,8 +16,13 @@ import {
   ChevronRight,
   ShieldCheck,
   Activity,
+  LogOut,
+  LogIn,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth/auth-context";
+import { RoleLabels } from "@/lib/validations/auth";
 
 interface SidebarProps {
   alertCount?: number;
@@ -26,6 +31,7 @@ interface SidebarProps {
 export function Sidebar({ alertCount = 0 }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user, logout } = useAuth();
 
   const navigation = [
     {
@@ -180,9 +186,64 @@ export function Sidebar({ alertCount = 0 }: SidebarProps) {
         })}
       </nav>
 
-      {/* Microcopy & Protocol Footer */}
-      {!isCollapsed && (
-        <div className="p-3 border-t border-slate-200/70 bg-slate-50/60">
+      {/* User Status / Account Footer */}
+      <div className="p-3 border-t border-slate-200/70 bg-slate-50/60">
+        {!isCollapsed ? (
+          user ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-2xs mb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-700 text-[10px] font-bold text-white uppercase">
+                    {user.name.slice(0, 2)}
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-semibold text-slate-800 truncate leading-tight">
+                      {user.name}
+                    </p>
+                    <p className="text-[10px] text-teal-700 font-medium truncate leading-tight mt-0.5">
+                      {RoleLabels[user.role] || user.role}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => logout()}
+                  className="rounded p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  title="Sign Out"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-2xs mb-2">
+              <p className="text-[11px] font-semibold text-slate-700">Clinical Workstation</p>
+              <div className="mt-2 flex gap-1.5">
+                <Link
+                  href="/login"
+                  className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded py-1 transition-colors"
+                >
+                  <LogIn className="h-3 w-3" />
+                  <span>Sign In</span>
+                </Link>
+                <Link
+                  href="/register"
+                  className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded py-1 transition-colors"
+                >
+                  <span>Sign Up</span>
+                </Link>
+              </div>
+            </div>
+          )
+        ) : user ? (
+          <div className="flex justify-center mb-2" title={`Signed in as ${user.name}`}>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-700 text-[10px] font-bold text-white uppercase">
+              {user.name.slice(0, 2)}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Microcopy & Protocol Footer */}
+        {!isCollapsed && (
           <div className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-2xs">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
               <ShieldCheck className="h-3.5 w-3.5 text-teal-600" />
@@ -196,8 +257,8 @@ export function Sidebar({ alertCount = 0 }: SidebarProps) {
               <span className="text-teal-700 font-semibold">Active</span>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Collapse Toggle */}
       <button

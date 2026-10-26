@@ -26,6 +26,7 @@ model Facility {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   locations   StorageLocation[]
+  users       User[]
 
   @@index([orgId])
   @@index([type])
@@ -133,9 +134,39 @@ model AppSettings {
   id                          String   @id @default("default")
   orgName                     String   @default("AyuTrace Health Network")
   defaultFacilityId           String?
+  geminiApiKey                String?
   nearExpiryThresholdDays     Int      @default(90) // Healthcare warning horizon (default 90 days)
   criticalExpiryThresholdDays Int      @default(30) // Critical horizon (default 30 days)
   urgentExpiryThresholdDays   Int      @default(7)  // Urgent immediate quarantine (default 7 days)
   dateFormat                  String   @default("DD/MM/YYYY")
   updatedAt                   DateTime @updatedAt
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String
+  passwordHash  String
+  role          String       @default("pharmacist") // pharmacist, lead_pharmacist, inventory_manager, doctor, auditor, admin
+  licenseNumber String?
+  department    String?
+  facilityId    String?
+  facility      Facility?    @relation(fields: [facilityId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  sessions      Session[]
+
+  @@index([facilityId])
+  @@index([role])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  token        String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
 }

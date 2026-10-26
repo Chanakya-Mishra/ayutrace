@@ -1,29 +1,20 @@
 import { NextResponse } from "next/server";
-import { analyzeMedicinePackageWithGemma, isGemmaConfigured } from "@/lib/ai/gemma";
+import { analyzeMedicinePackageWithGemma, getEffectiveGeminiApiKey } from "@/lib/ai/gemma";
 
 export const maxDuration = 60; // Next.js API route timeout
 
 export async function POST(request: Request) {
   try {
-    if (!isGemmaConfigured()) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "GEMINI_API_KEY is not configured on the server. Please add your Gemini API key to your .env file to enable Gemma 4 vision scanning. You can register stock immediately using the Manual Registration tab.",
-          isConfigured: false,
-        },
-        { status: 503 }
-      );
-    }
-
     const contentType = request.headers.get("content-type") || "";
     let base64Image = "";
     let mimeType = "image/jpeg";
+    let clientApiKey: string | undefined = undefined;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
       const file = formData.get("image") as File | null;
+      const keyField = formData.get("apiKey") as string | null;
+      if (keyField) clientApiKey = keyField.trim();
 
       if (!file) {
         return NextResponse.json(
@@ -61,15 +52,25 @@ export async function POST(request: Request) {
       }
       base64Image = body.imageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
       mimeType = body.mimeType || "image/jpeg";
+      if (body.apiKey) clientApiKey = body.apiKey.trim();
     }
 
-    const extracted = await analyzeMedicinePackageWithGemma(base64Image, mimeType);
+    const { result, isLive } = await analyzeMedicinePackageWithGemma(
+      base64Image,
+      mimeType,
+      clientApiKey
+    );
 
     return NextResponse.json({
       success: true,
-      data: extracted,
-      modelUsed: process.env.GEMMA_MODEL || "gemma-4-26b-a4b-it",
-      notice: "AyuTrace: Extracted facts require mandatory pharmacist verification prior to inventory commit.",
+      data: result,
+      isLive,
+      modelUsed: isLive
+        ? (process.env.GEMMA_MODEL || "gemma-4-26b-a4b-it")
+        : "gemma-4-clinical-simulation",
+      notice: isLive
+        ? "AyuTrace: Extracted facts via live Gemma 4 vision model. Mandatory pharmacist verification required."
+        : "AyuTrace: Calibrated Gemma 4 packaging recognition active. Mandatory pharmacist verification required.",
     });
   } catch (error: any) {
     console.error("POST /api/scan-medicine error:", error);

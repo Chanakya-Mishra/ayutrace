@@ -3,8 +3,20 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, ScanLine, Building2, Calendar, Shield } from "lucide-react";
+import {
+  Bell,
+  ScanLine,
+  Building2,
+  Calendar,
+  Shield,
+  LogOut,
+  User as UserIcon,
+  LogIn,
+  UserPlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth/auth-context";
+import { RoleLabels } from "@/lib/validations/auth";
 
 interface NavbarProps {
   alertCount?: number;
@@ -20,6 +32,7 @@ export function Navbar({
   onFacilityChange,
 }: NavbarProps) {
   const pathname = usePathname();
+  const { user, logout, isLoading: isAuthLoading } = useAuth();
   const [facilities, setFacilities] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -159,6 +172,58 @@ export function Navbar({
             <span>Scan Medicine</span>
           </Button>
         </Link>
+
+        {/* User Account / Authentication Controls */}
+        {!isAuthLoading && (
+          <div className="flex items-center pl-1 border-l border-slate-200/80">
+            {user ? (
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-200/80 px-2.5 py-1 text-left"
+                  title={`Logged in as ${user.name} (${user.email})`}
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-700 text-[10px] font-bold text-white uppercase">
+                    {user.name.slice(0, 2)}
+                  </div>
+                  <div className="hidden xl:flex flex-col">
+                    <span className="text-xs font-semibold text-slate-800 leading-tight truncate max-w-[120px]">
+                      {user.name}
+                    </span>
+                    <span className="text-[10px] text-teal-700 font-medium leading-none">
+                      {RoleLabels[user.role] || user.role}
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => logout()}
+                  className="h-8 px-2 text-xs text-slate-500 hover:text-rose-600 hover:bg-rose-50"
+                  title="Sign out of AyuTrace"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline text-xs ml-1">Sign Out</span>
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link href="/login">
+                  <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5 text-slate-700">
+                    <LogIn className="h-3.5 w-3.5" />
+                    <span>Sign In</span>
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 border-teal-600 text-teal-700 hover:bg-teal-50">
+                    <UserPlus className="h-3.5 w-3.5" />
+                    <span>Make Account</span>
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

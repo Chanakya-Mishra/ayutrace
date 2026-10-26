@@ -5,18 +5,6 @@ export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
-    if (!isGemmaConfigured()) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "GEMINI_API_KEY is not configured on the server. Please add your Gemini API key to your .env file to enable Gemma 4 vision scanning. In the meantime, use the Manual Product Entry form to register items.",
-          isConfigured: false,
-        },
-        { status: 503 }
-      );
-    }
-
     const contentType = request.headers.get("content-type") || "";
     let base64Image = "";
     let mimeType = "image/jpeg";

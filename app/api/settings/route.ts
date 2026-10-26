@@ -27,11 +27,16 @@ export async function GET() {
       orderBy: { name: "asc" },
     });
 
+    const hasEnvKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== "");
+    const hasDbKey = Boolean(settings.geminiApiKey && settings.geminiApiKey.trim() !== "");
+    const isConfigured = hasEnvKey || hasDbKey;
+
     return NextResponse.json({
       success: true,
       data: {
         ...settings,
-        isGemmaConfigured: isGemmaConfigured(),
+        geminiApiKey: settings.geminiApiKey ? "••••••••••••••••" : "",
+        isGemmaConfigured: isConfigured,
         configuredModel: process.env.GEMMA_MODEL || "gemma-4-26b-a4b-it",
         facilities,
       },
@@ -46,32 +51,38 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const validated = AppSettingsSchema.parse(body);
 
+    const updateData: any = {
+      orgName: validated.orgName,
+      defaultFacilityId: validated.defaultFacilityId,
+      nearExpiryThresholdDays: validated.nearExpiryThresholdDays,
+      criticalExpiryThresholdDays: validated.criticalExpiryThresholdDays,
+      urgentExpiryThresholdDays: validated.urgentExpiryThresholdDays,
+      dateFormat: validated.dateFormat,
+    };
+
+    if (typeof validated.geminiApiKey === "string") {
+      updateData.geminiApiKey = validated.geminiApiKey.trim() || null;
+    }
+
     const updated = await prisma.appSettings.upsert({
       where: { id: "default" },
-      update: {
-        orgName: validated.orgName,
-        defaultFacilityId: validated.defaultFacilityId,
-        nearExpiryThresholdDays: validated.nearExpiryThresholdDays,
-        criticalExpiryThresholdDays: validated.criticalExpiryThresholdDays,
-        urgentExpiryThresholdDays: validated.urgentExpiryThresholdDays,
-        dateFormat: validated.dateFormat,
-      },
+      update: updateData,
       create: {
         id: "default",
-        orgName: validated.orgName,
-        defaultFacilityId: validated.defaultFacilityId,
-        nearExpiryThresholdDays: validated.nearExpiryThresholdDays,
-        criticalExpiryThresholdDays: validated.criticalExpiryThresholdDays,
-        urgentExpiryThresholdDays: validated.urgentExpiryThresholdDays,
-        dateFormat: validated.dateFormat,
+        ...updateData,
       },
     });
+
+    const hasEnvKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== "");
+    const hasDbKey = Boolean(updated.geminiApiKey && updated.geminiApiKey.trim() !== "");
+    const isConfigured = hasEnvKey || hasDbKey;
 
     return NextResponse.json({
       success: true,
       data: {
         ...updated,
-        isGemmaConfigured: isGemmaConfigured(),
+        geminiApiKey: updated.geminiApiKey ? "••••••••••••••••" : "",
+        isGemmaConfigured: isConfigured,
         configuredModel: process.env.GEMMA_MODEL || "gemma-4-26b-a4b-it",
       },
     });

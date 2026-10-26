@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { hashPassword } from "../lib/auth/password";
 
 const prisma = new PrismaClient();
 
@@ -63,6 +64,38 @@ async function main() {
       criticalExpiryThresholdDays: 30,
       urgentExpiryThresholdDays: 7,
       dateFormat: "DD/MM/YYYY",
+    },
+  });
+
+  // 4. Seed Clinicians / Pharmacists
+  const defaultPassword = "Password123!";
+  const passwordHash = hashPassword(defaultPassword);
+
+  await prisma.user.upsert({
+    where: { email: "pharmacist@ayutrace.org" },
+    update: {},
+    create: {
+      name: "Senior Pharmacist Sharma",
+      email: "pharmacist@ayutrace.org",
+      passwordHash,
+      role: "lead_pharmacist",
+      licenseNumber: "PCI-DL-2018-4491",
+      department: "Central Inpatient Dispensary",
+      facilityId: hospital.id,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "ananya@ayutrace.org" },
+    update: {},
+    create: {
+      name: "Staff Pharmacist Ananya",
+      email: "ananya@ayutrace.org",
+      passwordHash,
+      role: "pharmacist",
+      licenseNumber: "PCI-KA-2022-7712",
+      department: "Primary Care Dispensary",
+      facilityId: clinic.id,
     },
   });
 
