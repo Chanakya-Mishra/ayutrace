@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingIncludes: {
-    '/api/**/*': ['./prisma/template.db'],
+    '/api/**/*': ['./prisma/template.db', './public/template.db'],
   },
 };
 
