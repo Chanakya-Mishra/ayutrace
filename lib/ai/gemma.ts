@@ -305,6 +305,11 @@ export async function analyzeMedicinePackageWithGemma(
   const configuredModel = process.env.GEMMA_MODEL;
   const candidateModels = [
     ...(configuredModel && !configuredModel.includes("gemma-4-26b") ? [configuredModel] : []),
+    "gemini-3.8-flash",
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
+    "gemini-3.5-flash",
+    "gemini-2.5-flash-lite",
     "gemini-2.5-flash",
     "gemini-2.0-flash",
     "gemini-1.5-flash",
@@ -347,14 +352,20 @@ SAFETY & PHARMACEUTICAL CONSTRAINTS:
   for (const modelName of candidateModels) {
     try {
       const model = genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent([
-        systemPrompt,
-        {
-          inlineData: {
-            data: imageBase64,
-            mimeType: cleanMime,
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Request timed out after 8s")), 8000)
+      );
+      const result = await Promise.race([
+        model.generateContent([
+          systemPrompt,
+          {
+            inlineData: {
+              data: imageBase64,
+              mimeType: cleanMime,
+            },
           },
-        },
+        ]),
+        timeoutPromise,
       ]);
 
       const response = await result.response;
