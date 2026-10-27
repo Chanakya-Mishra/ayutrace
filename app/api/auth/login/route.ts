@@ -60,12 +60,20 @@ export async function POST(req: Request) {
       message: "Authentication successful",
       user: sanitizeUser(user),
     });
-  } catch (error) {
-    console.error("Login error:", error);
+  } catch (error: any) {
+    console.error("Login error:", error?.message || error);
+    const isDbError =
+      error?.message?.includes("database") ||
+      error?.message?.includes("datasource") ||
+      error?.message?.includes("protocol");
+
     return NextResponse.json(
       {
         success: false,
-        error: "Internal server error occurred during login.",
+        error: isDbError
+          ? "Database connection error. Please verify Vercel environment integration (DATABASE_URL)."
+          : "Internal server error occurred during login. Please try again.",
+        details: process.env.NODE_ENV !== "production" ? error?.message : undefined,
       },
       { status: 500 }
     );

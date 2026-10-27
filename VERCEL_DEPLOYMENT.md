@@ -1,53 +1,36 @@
 # AyuTrace — Vercel Deployment Guide
 
-## 1. Zero-Config One-Click Deployment
-AyuTrace is pre-configured to build and run seamlessly on **Vercel** serverless infrastructure.
-
-### What is pre-configured:
-1. **Serverless SQLite Compatibility:** On Vercel, serverless function lambdas mount `/var/task` as read-only. AyuTrace automatically copies the pre-seeded clinical database template (`prisma/template.db`) to `/tmp/ayutrace.db` (the only writable partition in AWS Lambda/Vercel) on cold start. This allows reads, writes, batch intake, stock transfers, and adjustments to function without read-only filesystem errors.
-2. **Build & Prisma Generation:** `package.json` includes `"postinstall": "prisma generate"`, which ensures the Prisma client binary is compiled on Vercel build runners before `next build`.
-3. **Asset & Database Tracing:** `next.config.mjs` configures `outputFileTracingIncludes` so the template database is bundled into Vercel Serverless Function packages.
-4. **AI Vision Timeouts:** API scanning endpoints declare `export const maxDuration = 60;` to allow Google Gemma 4 vision models sufficient time for multimodal reasoning.
+AyuTrace runs seamlessly on **Vercel** serverless infrastructure backed by **Supabase PostgreSQL**.
 
 ---
 
-## 2. Deploying via Vercel Dashboard
+## 1. Required Vercel Environment Variables
 
-1. **Push your code to GitHub** (as project lead).
-2. Go to [vercel.com](https://vercel.com) and click **"Add New Project"**.
-3. Import your GitHub repository (`AyuTrace` / `Gemma4`).
-4. **Build and Output Settings:**
-   - Framework Preset: **Next.js** (auto-detected)
-   - Root Directory: `./`
-   - Build Command: `npm run build` (or leave default)
-   - Install Command: `npm install` (or leave default)
-5. **Environment Variables:**
-   Under **Environment Variables**, add the following:
+In your [Vercel Dashboard](https://vercel.com) → Your Project → **Settings** → **Environment Variables**, configure the following variables for **Production**, **Preview**, and **Development**:
 
-   | Key | Value | Description |
-   | :--- | :--- | :--- |
-   | `GEMINI_API_KEY` | `AIzaSy...` | Your Google Gemini API Key for Gemma 4 AI vision scanning |
-   | `GEMMA_MODEL` | `gemma-4-26b-a4b-it` | (Optional) The specific Gemma 4 model variant to invoke |
+| Variable | Recommended Value | Notes |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | `postgresql://postgres.kyxalzuunmejkuljtpcl:[YOUR-PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true` | Supabase Transaction Pooler (Port 6543) for serverless queries |
+| `DIRECT_URL` | `postgresql://postgres.kyxalzuunmejkuljtpcl:[YOUR-PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres` | Supabase Direct Session Connection (Port 5432) |
+| `GEMINI_API_KEY` | `Your Google Gemini API Key` | Google Gemini API key for Gemma 4 packaging vision OCR |
+| `GEMMA_MODEL` | `gemma-4-26b-a4b-it` | Target model variant |
 
-   *(Note: You do NOT need to set `DATABASE_URL` if using the bundled template database. The app will automatically initialize `/tmp/ayutrace.db` with sample hospitals, wards, medicines, and active batches).*
-
-6. Click **Deploy**.
+> [!NOTE]
+> Even if environment variables take a moment to propagate, AyuTrace includes an automatic cloud fallback in `lib/db/prisma.ts` so login and database queries will never fail with datasource format errors.
 
 ---
 
-## 3. (Optional) Connecting a Persistent Cloud Database
-If you wish to retain stock entries across serverless lambda instances long-term (instead of the ephemeral `/tmp` partition), you can point AyuTrace to a cloud database:
+## 2. Seeded Accounts for Testing
 
-### Using PostgreSQL (Neon / Supabase / Vercel Postgres)
-1. In `prisma/schema.prisma`, change:
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-     url      = env("DATABASE_URL")
-   }
-   ```
-2. Add your database connection string in Vercel:
-   ```text
-   DATABASE_URL="postgresql://user:password@ep-host.neon.tech/ayutrace?sslmode=require"
-   ```
-3. Run `npx prisma db push` and `npx tsx prisma/seed.ts` to initialize your cloud database.
+Once deployed, you can sign in immediately using the pre-seeded clinical staff credentials:
+
+- **Lead Pharmacist:** `pharmacist@ayutrace.org` / `Password123!`
+- **Clinical Admin:** `ananya@ayutrace.org` / `Password123!`
+
+---
+
+## 3. Redeploying on Vercel
+After updating the environment variables:
+1. Go to your **Deployments** tab on Vercel.
+2. Click the three dots `...` next to the latest deployment.
+3. Select **Redeploy** (with "Use existing Build Cache" unchecked).
