@@ -25,8 +25,12 @@ export function SettingsView() {
   const [dateFormat, setDateFormat] = useState("DD/MM/YYYY");
 
   const [facilities, setFacilities] = useState<any[]>([]);
-  const [isGemmaConfigured, setIsGemmaConfigured] = useState(false);
-  const [configuredModel, setConfiguredModel] = useState("gemma-4-26b-a4b-it");
+  const [isGemmaConfigured, setIsGemmaConfigured] = useState(() =>
+    Boolean(process.env.NEXT_PUBLIC_GEMINI_API_KEY && process.env.NEXT_PUBLIC_GEMINI_API_KEY.trim() !== "")
+  );
+  const [configuredModel, setConfiguredModel] = useState(
+    () => process.env.NEXT_PUBLIC_GEMMA_MODEL || "gemma-4-26b-a4b-it"
+  );
   const [geminiApiKeyInput, setGeminiApiKeyInput] = useState("");
   const [isSavingKey, setIsSavingKey] = useState(false);
 

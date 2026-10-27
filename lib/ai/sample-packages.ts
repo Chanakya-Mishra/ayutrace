@@ -66,7 +66,12 @@ function createMedicinePackageSvg(
     <text x="350" y="370" font-family="monospace" font-size="11" fill="#94a3b8">CDSCO / FDA STANDARD PACKAGING</text>
   </svg>`;
 
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  const base64Svg =
+    typeof window !== "undefined"
+      ? window.btoa(unescape(encodeURIComponent(svg)))
+      : Buffer.from(svg).toString("base64");
+
+  return `data:image/svg+xml;base64,${base64Svg}`;
 }
 
 export const SAMPLE_MEDICINE_PACKAGES: SampleMedicinePackage[] = [

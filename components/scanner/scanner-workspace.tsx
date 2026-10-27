@@ -78,8 +78,33 @@ export function ScannerWorkspace() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Load facilities and locations
+  // Load facilities, locations, and real-time Gemma engine configuration
   useEffect(() => {
+    // 1. Check frontend public key or server configuration
+    const hasPublicKey = Boolean(
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY &&
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY.trim() !== ""
+    );
+    if (hasPublicKey) {
+      setIsLiveEngine(true);
+    }
+
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          if (json.data.isGemmaConfigured || hasPublicKey) {
+            setIsLiveEngine(true);
+          } else {
+            setIsLiveEngine(false);
+          }
+        }
+      })
+      .catch(() => {
+        if (hasPublicKey) setIsLiveEngine(true);
+      });
+
+    // 2. Load facilities and locations
     fetch("/api/facilities")
       .then((res) => res.json())
       .then((json) => {
@@ -214,6 +239,7 @@ export function ScannerWorkspace() {
           imageBase64: imagePreview,
           imageName: imageFile?.name || "",
           mimeType: imageFile?.type || "image/jpeg",
+          apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || undefined,
         }),
       });
 
@@ -374,7 +400,16 @@ export function ScannerWorkspace() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          {!isLiveEngine && (
+          {isLiveEngine ? (
+            <button
+              type="button"
+              onClick={() => setShowKeyModal(true)}
+              className="text-[11px] font-medium text-teal-800 hover:text-teal-950 underline underline-offset-2 flex items-center gap-1 cursor-pointer"
+            >
+              <Key className="h-3 w-3" />
+              Update API Key
+            </button>
+          ) : (
             <button
               type="button"
               onClick={() => setShowKeyModal(true)}

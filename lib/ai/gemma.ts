@@ -305,9 +305,9 @@ export async function analyzeMedicinePackageWithGemma(
   const configuredModel = process.env.GEMMA_MODEL;
   const candidateModels = [
     ...(configuredModel && !configuredModel.includes("gemma-4-26b") ? [configuredModel] : []),
-    "gemini-3.8-flash",
-    "gemini-flash-latest",
     "gemini-flash-lite-latest",
+    "gemini-flash-latest",
+    "gemini-3.8-flash",
     "gemini-3.5-flash",
     "gemini-2.5-flash-lite",
     "gemini-2.5-flash",
