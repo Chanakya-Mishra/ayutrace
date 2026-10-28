@@ -31,6 +31,7 @@ model Facility {
 
   @@index([orgId])
   @@index([type])
+  @@index([name])
 }
 
 model StorageLocation {
@@ -46,6 +47,7 @@ model StorageLocation {
   incomingMoves  StockMovement[] @relation("DestLocation")
 
   @@index([facilityId])
+  @@index([facilityId, name])
 }
 
 model Medicine {
@@ -67,8 +69,11 @@ model Medicine {
 
   @@index([name])
   @@index([genericName])
+  @@index([manufacturer])
   @@index([category])
   @@index([dosageForm])
+  @@index([category, dosageForm])
+  @@index([createdAt])
 }
 
 model MedicineBatch {
@@ -95,6 +100,9 @@ model MedicineBatch {
   @@index([batchNumber])
   @@index([normalizedExpiryDate])
   @@index([status])
+  @@index([status, normalizedExpiryDate])
+  @@index([medicineId, status])
+  @@index([createdAt])
 }
 
 model StockBalance {
@@ -109,6 +117,8 @@ model StockBalance {
   @@unique([batchId, locationId])
   @@index([batchId])
   @@index([locationId])
+  @@index([quantity])
+  @@index([locationId, quantity])
 }
 
 model StockMovement {
@@ -129,6 +139,9 @@ model StockMovement {
   @@index([batchId])
   @@index([sourceLocationId])
   @@index([destinationLocationId])
+  @@index([movementType])
+  @@index([createdAt])
+  @@index([batchId, createdAt])
 }
 
 model AppSettings {
@@ -159,6 +172,7 @@ model User {
 
   @@index([facilityId])
   @@index([role])
+  @@index([facilityId, role])
 }
 
 model Session {
@@ -170,4 +184,5 @@ model Session {
   createdAt    DateTime @default(now())
 
   @@index([userId])
+  @@index([expiresAt])
 }
