@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -18,12 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import { formatDisplayDate } from "@/lib/inventory/dates";
 import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
 import { BatchDetailsModal } from "@/components/inventory/batch-details-modal";
+import { useFacilities, useInventory } from "@/lib/hooks/use-swr-api";
 
 export function InventoryView() {
-  const [batches, setBatches] = useState<any[]>([]);
-  const [facilities, setFacilities] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
   // Filters
   const [search, setSearch] = useState("");
   const [facilityId, setFacilityId] = useState("all");
@@ -32,51 +29,25 @@ export function InventoryView() {
   const [sortBy, setSortBy] = useState("normalizedExpiryDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
+  // SWR data hooks
+  const { facilities } = useFacilities();
+  const {
+    batches,
+    isLoading,
+    mutate: fetchInventory,
+  } = useInventory({
+    search,
+    facilityId,
+    dosageForm,
+    status,
+    sortBy,
+    sortOrder,
+  });
+
   // Modals
   const [selectedBatchForAdjust, setSelectedBatchForAdjust] = useState<any | null>(null);
   const [selectedBatchForDetails, setSelectedBatchForDetails] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  // Load facilities for filter dropdown
-  useEffect(() => {
-    fetch("/api/facilities")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && json.data) setFacilities(json.data);
-      })
-      .catch(() => {});
-  }, []);
-
-  const fetchInventory = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams({
-        search,
-        facilityId,
-        dosageForm,
-        status,
-        sortBy,
-        sortOrder,
-      });
-
-      const res = await fetch(`/api/inventory?${params.toString()}`);
-      const json = await res.json();
-      if (json.success) {
-        setBatches(json.data || []);
-      }
-    } catch (err) {
-      console.error("Failed to load inventory:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [search, facilityId, dosageForm, status, sortBy, sortOrder]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchInventory();
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [fetchInventory]);
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to archive / delete batch for "${name}"?`)) {

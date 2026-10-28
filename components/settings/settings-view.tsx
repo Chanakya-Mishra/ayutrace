@@ -5,8 +5,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Building2, Sliders, CheckCircle2, Lock } from "lucide-react";
+import { useSettings } from "@/lib/hooks/use-swr-api";
 
 export function SettingsView() {
+  const { settings, isLoading, mutate: mutateSettings } = useSettings();
+
   const [orgName, setOrgName] = useState("AyuTrace Health Network");
   const [defaultFacilityId, setDefaultFacilityId] = useState("");
   const [nearExpiryDays, setNearExpiryDays] = useState(90);
@@ -16,26 +19,20 @@ export function SettingsView() {
 
   const [facilities, setFacilities] = useState<any[]>([]);
 
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/settings")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && json.data) {
-          setOrgName(json.data.orgName);
-          setDefaultFacilityId(json.data.defaultFacilityId || "");
-          setNearExpiryDays(json.data.nearExpiryThresholdDays);
-          setCriticalExpiryDays(json.data.criticalExpiryThresholdDays);
-          setUrgentExpiryDays(json.data.urgentExpiryThresholdDays || 7);
-          setDateFormat(json.data.dateFormat || "DD/MM/YYYY");
-          if (json.data.facilities) setFacilities(json.data.facilities);
-        }
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
+    if (settings) {
+      setOrgName(settings.orgName);
+      setDefaultFacilityId(settings.defaultFacilityId || "");
+      setNearExpiryDays(settings.nearExpiryThresholdDays);
+      setCriticalExpiryDays(settings.criticalExpiryThresholdDays);
+      setUrgentExpiryDays(settings.urgentExpiryThresholdDays || 7);
+      setDateFormat(settings.dateFormat || "DD/MM/YYYY");
+      if (settings.facilities) setFacilities(settings.facilities);
+    }
+  }, [settings]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +59,7 @@ export function SettingsView() {
       }
 
       setSaveMessage("Healthcare organization settings updated successfully!");
+      await mutateSettings();
       setTimeout(() => setSaveMessage(null), 3500);
     } catch (err: any) {
       alert(err.message || "Failed to save settings");

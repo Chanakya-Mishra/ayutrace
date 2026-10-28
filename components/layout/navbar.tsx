@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-context";
 import { RoleLabels } from "@/lib/validations/auth";
+import { useFacilities } from "@/lib/hooks/use-swr-api";
 
 interface NavbarProps {
   alertCount?: number;
@@ -33,18 +34,7 @@ export function Navbar({
 }: NavbarProps) {
   const pathname = usePathname();
   const { user, logout, isLoading: isAuthLoading } = useAuth();
-  const [facilities, setFacilities] = useState<Array<{ id: string; name: string }>>([]);
-
-  useEffect(() => {
-    fetch("/api/facilities")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && json.data) {
-          setFacilities(json.data);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const { facilities } = useFacilities();
 
   const getPageInfo = (path: string) => {
     switch (path) {

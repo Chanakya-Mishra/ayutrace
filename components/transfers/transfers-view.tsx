@@ -12,12 +12,31 @@ import {
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
+import {
+  useTransfers,
+  useInventory,
+  useFacilities,
+  revalidateAll,
+} from "@/lib/hooks/use-swr-api";
 
 export function TransfersView() {
-  const [transfers, setTransfers] = useState<any[]>([]);
-  const [batches, setBatches] = useState<any[]>([]);
-  const [facilities, setFacilities] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    transfers,
+    isLoading: isTransfersLoading,
+    mutate: mutateTransfers,
+  } = useTransfers();
+  const {
+    batches,
+    isLoading: isInventoryLoading,
+    mutate: mutateInventory,
+  } = useInventory();
+  const {
+    facilities,
+    isLoading: isFacilitiesLoading,
+    mutate: mutateFacilities,
+  } = useFacilities();
+
+  const isLoading = isTransfersLoading || isInventoryLoading || isFacilitiesLoading;
 
   // Form State
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
@@ -32,50 +51,28 @@ export function TransfersView() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const [transfersRes, inventoryRes, facilitiesRes] = await Promise.all([
-        fetch("/api/transfers"),
-        fetch("/api/inventory"),
-        fetch("/api/facilities"),
-      ]);
-
-      const [transfersJson, inventoryJson, facilitiesJson] = await Promise.all([
-        transfersRes.json(),
-        inventoryRes.json(),
-        facilitiesRes.json(),
-      ]);
-
-      if (transfersJson.success) setTransfers(transfersJson.data || []);
-      if (inventoryJson.success) {
-        setBatches(inventoryJson.data || []);
-        if (inventoryJson.data?.length > 0) {
-          const firstBatch = inventoryJson.data[0];
-          setSelectedBatchId(firstBatch.id);
-          if (firstBatch.balances?.length > 0) {
-            setSourceLocationId(firstBatch.balances[0].locationId);
-          }
-        }
+  useEffect(() => {
+    if (!selectedBatchId && batches.length > 0) {
+      setSelectedBatchId(batches[0].id);
+      if (batches[0].balances?.length > 0) {
+        setSourceLocationId(batches[0].balances[0].locationId);
       }
-      if (facilitiesJson.success) {
-        setFacilities(facilitiesJson.data || []);
-        // Set default destination
-        const allLocs = facilitiesJson.data.flatMap((f: any) => f.locations || []);
-        if (allLocs.length > 1) {
-          setDestinationLocationId(allLocs[1].id);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load transfer data:", err);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [batches, selectedBatchId]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!destinationLocationId && facilities.length > 0) {
+      const allLocs = facilities.flatMap((f: any) => f.locations || []);
+      if (allLocs.length > 1) {
+        setDestinationLocationId(allLocs[1].id);
+      }
+    }
+  }, [facilities, destinationLocationId]);
+
+  const loadData = async () => {
+    await Promise.all([mutateTransfers(), mutateInventory(), mutateFacilities()]);
+    revalidateAll();
+  };
 
   const selectedBatch = batches.find((b) => b.id === selectedBatchId);
   const sourceBalance = selectedBatch?.balances?.find((b: any) => b.locationId === sourceLocationId);

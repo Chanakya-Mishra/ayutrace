@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   ClockAlert,
@@ -20,35 +20,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDisplayDate } from "@/lib/inventory/dates";
 import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
+import { useInventory } from "@/lib/hooks/use-swr-api";
 
 export function ExpiryMonitorView() {
-  const [batches, setBatches] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    batches,
+    isLoading,
+    mutate: loadData,
+  } = useInventory({
+    sortBy: "normalizedExpiryDate",
+    sortOrder: "asc",
+  });
 
   // Filter Tab: "all" | "expired" | "urgent" | "critical" | "near" | "unverified"
   const [filterTab, setFilterTab] = useState<string>("all");
   const [horizonDays, setHorizonDays] = useState<number>(90); // 90, 60, 30
 
   const [selectedBatchForAdjust, setSelectedBatchForAdjust] = useState<any | null>(null);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/inventory?sortBy=normalizedExpiryDate&sortOrder=asc");
-      const json = await res.json();
-      if (json.success) {
-        setBatches(json.data || []);
-      }
-    } catch (err) {
-      console.error("Failed to load batches:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const activeBatches = batches.filter((b) => b.status !== "depleted");
 

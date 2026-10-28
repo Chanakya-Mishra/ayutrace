@@ -31,6 +31,7 @@ import {
   SAMPLE_MEDICINE_PACKAGES,
   SampleMedicinePackage,
 } from "@/lib/ai/sample-packages";
+import { revalidateAll } from "@/lib/hooks/use-swr-api";
 
 export function ScannerWorkspace() {
   const router = useRouter();
@@ -277,6 +278,7 @@ export function ScannerWorkspace() {
       }
 
       setSaveSuccess(true);
+      revalidateAll();
       setTimeout(() => {
         router.push("/inventory");
       }, 1200);

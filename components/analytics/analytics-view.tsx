@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   BarChart,
   Bar,
@@ -17,19 +17,10 @@ import {
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Building2, Pill, ShieldAlert, AlertTriangle } from "lucide-react";
+import { useStats } from "@/lib/hooks/use-swr-api";
 
 export function AnalyticsView() {
-  const [stats, setStats] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/stats")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setStats(json.data);
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
+  const { stats, isLoading } = useStats();
 
   if (isLoading) {
     return <div className="py-16 text-center text-sm text-slate-400">Loading pharmaceutical analytics...</div>;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { ScanLine, Plus, ClockAlert, RefreshCw, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,29 +8,10 @@ import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { InventoryCharts } from "@/components/dashboard/inventory-charts";
 import { AttentionRequired } from "@/components/dashboard/attention-required";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
+import { useStats } from "@/lib/hooks/use-swr-api";
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchStats = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/stats");
-      const json = await res.json();
-      if (json.success) {
-        setStats(json.data);
-      }
-    } catch (err) {
-      console.error("Failed to load dashboard metrics:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
+  const { stats, isLoading, isValidating, mutate } = useStats();
 
   return (
     <div className="space-y-6">
@@ -49,12 +30,12 @@ export default function DashboardPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchStats}
-            disabled={isLoading}
+            onClick={() => mutate()}
+            disabled={isValidating}
             className="text-xs h-8 gap-1.5"
             title="Refresh metrics"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${isValidating ? "animate-spin text-teal-600" : ""}`} />
             Refresh
           </Button>
 

@@ -1,50 +1,26 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Navbar } from "@/components/layout/navbar";
+import { useStats, useSettings } from "@/lib/hooks/use-swr-api";
 
 interface PortalShellProps {
   children: React.ReactNode;
 }
 
 export function PortalShell({ children }: PortalShellProps) {
-  const [alertCount, setAlertCount] = useState(0);
-  const [orgName, setOrgName] = useState("AyuTrace Health Network");
   const [selectedFacilityId, setSelectedFacilityId] = useState("all");
+  const { stats } = useStats();
+  const { settings } = useSettings();
 
-  useEffect(() => {
-    async function loadMeta() {
-      try {
-        const [statsRes, settingsRes] = await Promise.all([
-          fetch("/api/stats"),
-          fetch("/api/settings"),
-        ]);
+  const alertCount = stats
+    ? (stats.expiredBatches || 0) +
+      (stats.urgentBatches || 0) +
+      (stats.unverifiedCount || 0)
+    : 0;
 
-        if (statsRes.ok) {
-          const stats = await statsRes.json();
-          if (stats.success && stats.data) {
-            const count =
-              (stats.data.expiredBatches || 0) +
-              (stats.data.urgentBatches || 0) +
-              (stats.data.unverifiedCount || 0);
-            setAlertCount(count);
-          }
-        }
-
-        if (settingsRes.ok) {
-          const settings = await settingsRes.json();
-          if (settings.success && settings.data?.orgName) {
-            setOrgName(settings.data.orgName);
-          }
-        }
-      } catch (err) {
-        console.warn("Could not load portal metadata:", err);
-      }
-    }
-
-    loadMeta();
-  }, []);
+  const orgName = settings?.orgName || "AyuTrace Health Network";
 
   return (
     <div className="flex min-h-screen bg-slate-50/70 font-sans text-slate-900 antialiased">

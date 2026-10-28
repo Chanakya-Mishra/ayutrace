@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Building2,
   Plus,
@@ -14,10 +14,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { useFacilities } from "@/lib/hooks/use-swr-api";
 
 export function FacilitiesView() {
-  const [facilities, setFacilities] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { facilities, isLoading, mutate: loadFacilities } = useFacilities();
 
   // New facility modal
   const [isAddFacilityOpen, setIsAddFacilityOpen] = useState(false);
@@ -33,23 +33,6 @@ export function FacilitiesView() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const loadFacilities = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/facilities");
-      const json = await res.json();
-      if (json.success) setFacilities(json.data || []);
-    } catch (err) {
-      console.error("Failed to load facilities:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadFacilities();
-  }, []);
 
   const handleCreateFacility = async (e: React.FormEvent) => {
     e.preventDefault();
