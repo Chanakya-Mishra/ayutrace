@@ -36,9 +36,19 @@ export default function LoginPage() {
 
   React.useEffect(() => {
     if (user) {
-      router.push("/dashboard");
+      router.replace("/dashboard");
     }
   }, [user, router]);
+
+  // Trap back navigation & swipe-left gestures to prevent returning to authenticated sessions
+  React.useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +72,7 @@ export default function LoginPage() {
 
       // Update auth context state
       login(data.user);
-      router.push("/dashboard");
+      router.replace("/dashboard");
       router.refresh();
     } catch (err) {
       setErrorMessage("Network or connection error. Please try again.");

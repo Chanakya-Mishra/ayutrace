@@ -48,7 +48,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (user) {
-      router.push("/dashboard");
+      router.replace("/dashboard");
     }
   }, [user, router]);
 
@@ -118,7 +118,7 @@ export default function RegisterPage() {
 
       // Automatically sign in upon registration
       login(data.user);
-      router.push("/dashboard");
+      router.replace("/dashboard");
       router.refresh();
     } catch (err) {
       setErrorMessage("Network error during registration. Please try again.");

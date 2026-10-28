@@ -1,8 +1,9 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
+import { AUTH_COOKIE_NAME } from "./constants";
 
-export const AUTH_COOKIE_NAME = "ayutrace_session";
+export { AUTH_COOKIE_NAME };
 
 export interface SafeUser {
   id: string;

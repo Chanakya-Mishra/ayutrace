@@ -52,13 +52,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "Cache-Control": "no-cache" },
+      });
     } catch (err) {
       console.warn("Logout request failed:", err);
     } finally {
       setUser(null);
-      router.push("/login");
-      router.refresh();
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", "/login");
+        window.location.replace("/login");
+      } else {
+        router.replace("/login");
+      }
     }
   };
 
