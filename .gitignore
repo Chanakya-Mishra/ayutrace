@@ -19,6 +19,7 @@ dist/
 # SQLite & Database
 prisma/*.db
 prisma/*.db-journal
+prisma/backup_*.json
 *.db
 *.db-journal
 !prisma/template.db

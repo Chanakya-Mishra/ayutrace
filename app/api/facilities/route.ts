@@ -1,35 +1,45 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { FacilityCreateSchema } from "@/lib/validations/medicine";
+import { fetchWithCache, invalidateCache } from "@/lib/cache/api-cache";
 
 export async function GET() {
   try {
-    const facilities = await prisma.facility.findMany({
-      include: {
-        locations: {
-          include: {
-            balances: true,
+    const enriched = await fetchWithCache("facilities:list", 60, async () => {
+      const facilities = await prisma.facility.findMany({
+        include: {
+          locations: {
+            include: {
+              balances: true,
+            },
           },
         },
-      },
-      orderBy: { name: "asc" },
-    });
+        orderBy: { name: "asc" },
+      });
 
-    const enriched = facilities.map((f) => {
-      let totalStockUnits = 0;
-      for (const loc of f.locations) {
-        for (const bal of loc.balances) {
-          totalStockUnits += bal.quantity;
+      return facilities.map((f) => {
+        let totalStockUnits = 0;
+        for (const loc of f.locations) {
+          for (const bal of loc.balances) {
+            totalStockUnits += bal.quantity;
+          }
         }
-      }
-      return {
-        ...f,
-        totalStockUnits,
-        locationCount: f.locations.length,
-      };
+        return {
+          ...f,
+          totalStockUnits,
+          locationCount: f.locations.length,
+        };
+      });
     });
 
-    return NextResponse.json({ success: true, data: enriched });
+    return NextResponse.json(
+      { success: true, data: enriched },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -67,6 +77,8 @@ export async function POST(request: Request) {
         locations: true,
       },
     });
+
+    invalidateCache("facilities");
 
     return NextResponse.json({ success: true, data: facility }, { status: 201 });
   } catch (error: any) {

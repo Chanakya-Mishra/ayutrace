@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { evaluateMedicineExpiry } from "@/lib/inventory/dates";
+import { fetchWithCache } from "@/lib/cache/api-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const facilityId = searchParams.get("facilityId") || "all";
 
-    const [medicines, batches, facilities, movements, settings] = await Promise.all([
+    const data = await fetchWithCache(`stats:${facilityId}`, 15, async () => {
+      const [medicines, batches, facilities, movements, settings] = await Promise.all([
       prisma.medicine.findMany({ select: { id: true, category: true, dosageForm: true } }),
       prisma.medicineBatch.findMany({
         where: {
@@ -174,9 +176,7 @@ export async function GET(request: Request) {
       )
       .slice(0, 8);
 
-    return NextResponse.json({
-      success: true,
-      data: {
+      return {
         registeredMedicines: medicines.length,
         totalStockUnits,
         activeBatches: batches.length,
@@ -194,8 +194,20 @@ export async function GET(request: Request) {
         expiryTimeline,
         criticalAttentionList,
         recentStockMovements: movements,
-      },
+      };
     });
+
+    return NextResponse.json(
+      {
+        success: true,
+        data,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=10, stale-while-revalidate=45",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("GET /api/stats error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

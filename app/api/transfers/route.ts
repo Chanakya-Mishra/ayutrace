@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { StockTransferSchema } from "@/lib/validations/medicine";
+import { invalidateCache } from "@/lib/cache/api-cache";
 
 export async function GET() {
   try {
@@ -118,6 +119,8 @@ export async function POST(request: Request) {
 
       return movement;
     });
+
+    invalidateCache();
 
     return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (error: any) {

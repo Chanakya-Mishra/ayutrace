@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { MedicineBatchEntrySchema } from "@/lib/validations/medicine";
 import { parseMedicineExpiryDate, evaluateMedicineExpiry } from "@/lib/inventory/dates";
+import { invalidateCache } from "@/lib/cache/api-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -203,6 +204,8 @@ export async function POST(request: Request) {
 
       return batch;
     });
+
+    invalidateCache();
 
     return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (error: any) {
