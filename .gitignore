@@ -22,8 +22,6 @@ prisma/*.db-journal
 prisma/backup_*.json
 *.db
 *.db-journal
-!prisma/template.db
-!public/template.db
 
 # Python caches
 __pycache__/
